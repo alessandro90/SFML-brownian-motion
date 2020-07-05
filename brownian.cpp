@@ -1,10 +1,12 @@
 #include "SFML/Graphics.hpp"
 #include <vector>
-#include <random>
 #include <chrono>
 #include <memory>
 #include <utility>
 #include <iostream>
+#include "pair.hpp"
+#include "potential.hpp"
+#include "noise.hpp"
 
 using TimePoint = std::chrono::system_clock::time_point;
 
@@ -13,43 +15,17 @@ auto getElapsed(TimePoint const &start, TimePoint const &end)
     return std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 }
 
-struct Potential
-{
-    virtual ~Potential() = default;
-    virtual std::pair<float, float> gradient(std::pair<float, float> const &) const = 0;
-};
-
-struct Flat: Potential
-{
-    std::pair<float, float> gradient(std::pair<float, float> const &point) const override
-    {
-        (void)point;
-        return {0., 0.};
-    }
-};
-
-class Noise
-{
-public:
-    float get()
-    {
-        return 100. * noise(gen);
-    }
-private:
-    static inline std::mt19937 gen{std::random_device{}()};
-    std::normal_distribution<float> noise{0., 1.};
-};
-
 class BrownianPath: public sf::Drawable, public sf::Transformable
 {
 public:
     explicit BrownianPath(sf::Vector2u const &size, std::unique_ptr<Potential> p):
     width{size.x},
     height{size.y},
-    energyPotential{std::move(p)},
-    points{}
+    energyPotential{std::move(p)}
     {
-        points.emplace_back(static_cast<float>(width) / 2., static_cast<float>(height) / 2.);
+        points.push_back(Pair{
+            static_cast<float>(width) / 2.f, static_cast<float>(height) / 2.f
+        });
     }
     void setSize(sf::Vector2u const & size)
     {
@@ -72,9 +48,9 @@ public:
         auto const &last = points[points.size() - 1];
         auto const &potentialGradient = energyPotential->gradient(last);
         auto const sqrtPropagationTime = std::sqrt(propagationTime);
-        auto const newX = last.first - potentialGradient.first * propagationTime + sqrtPropagationTime * noiseA.get();
-        auto const newY = last.second - potentialGradient.second * propagationTime + sqrtPropagationTime * noiseB.get();
-        if (newX < width && newY < height) points.emplace_back(newX, newY);
+        Pair noises{noiseA.get(), noiseB.get()};
+        Pair newPos = last - potentialGradient * propagationTime + sqrtPropagationTime * noises;
+        if (newPos.x < width && newPos.y < height) points.push_back(newPos);
     }
 private:
     void draw(sf::RenderTarget &target, sf::RenderStates states) const
@@ -84,15 +60,14 @@ private:
         if (points.size() == 1)
         {
             sf::VertexArray point{sf::Points, 1};
-            point[0].position = {points[0].first, points[0].second};
+            point[0].position = sf::Vector2f{points[0].x, points[0].y};
             target.draw(point);
             return;
         }
         sf::VertexArray lines{sf::LinesStrip, points.size()};
-        // sf::VertexArray lines{sf::Points, points.size()};
         for (std::size_t i = 0; i < points.size(); ++i)
         {
-            lines[i].position = sf::Vector2f{points[i].first, points[i].second};
+            lines[i].position = sf::Vector2f{points[i].x, points[i].y};
             lines[i].color = sf::Color::Red;
         }
         target.draw(lines);
@@ -102,7 +77,7 @@ private:
     Noise noiseA{};
     Noise noiseB{};
     TimePoint lastUpdate{};
-    std::vector<std::pair<float, float>> points{};
+    std::vector<Pair> points{};
     std::chrono::milliseconds const waitTime{100};
     float const propagationTime{1e-2};
 };
