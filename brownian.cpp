@@ -4,7 +4,7 @@
 #include <memory>
 #include <utility>
 #include <iostream>
-#include "pair.hpp"
+#include "coordinate2d.hpp"
 #include "potential.hpp"
 #include "noise.hpp"
 
@@ -18,12 +18,13 @@ auto getElapsed(TimePoint const &start, TimePoint const &end)
 class BrownianPath: public sf::Drawable, public sf::Transformable
 {
 public:
-    explicit BrownianPath(sf::Vector2u const &size, std::unique_ptr<Potential> p):
+    explicit BrownianPath(sf::Vector2u const &size, std::unique_ptr<Potential> p, sf::Color color):
     width{size.x},
     height{size.y},
-    energyPotential{std::move(p)}
+    energyPotential{std::move(p)},
+    color{color}
     {
-        points.push_back(Pair{
+        points.push_back(Coordinate2D{
             static_cast<float>(width) / 2.f, static_cast<float>(height) / 2.f
         });
     }
@@ -48,8 +49,8 @@ public:
         auto const &last = points[points.size() - 1];
         auto const &potentialGradient = energyPotential->gradient(last);
         auto const sqrtPropagationTime = std::sqrt(propagationTime);
-        Pair noises{noiseA.get(), noiseB.get()};
-        Pair newPos = last - potentialGradient * propagationTime + sqrtPropagationTime * noises;
+        Coordinate2D noises{noiseA.get(), noiseB.get()};
+        Coordinate2D newPos = last - potentialGradient * propagationTime + sqrtPropagationTime * noises;
         if (newPos.x < width && newPos.y < height) points.push_back(newPos);
     }
 private:
@@ -68,16 +69,17 @@ private:
         for (std::size_t i = 0; i < points.size(); ++i)
         {
             lines[i].position = sf::Vector2f{points[i].x, points[i].y};
-            lines[i].color = sf::Color::Red;
+            lines[i].color = color;
         }
         target.draw(lines);
     }
     std::size_t width, height;
     std::unique_ptr<Potential> energyPotential;
+    sf::Color color;
     Noise noiseA{};
     Noise noiseB{};
     TimePoint lastUpdate{};
-    std::vector<Pair> points{};
+    std::vector<Coordinate2D> points{};
     std::chrono::milliseconds const waitTime{100};
     float const propagationTime{1e-2};
 };
@@ -85,7 +87,9 @@ private:
 int main()
 {
     sf::RenderWindow win{sf::VideoMode{800, 800}, "Brownian Motion"};
-    BrownianPath path{win.getSize(), std::make_unique<Flat>()};
+    auto size = win.getSize();
+    BrownianPath path{size, std::make_unique<Flat>(), sf::Color::Red};
+    BrownianPath path1{size, std::make_unique<SingleWell>(1.f, 1.f), sf::Color::Green};
     while (win.isOpen())
     {
         sf::Event event;
@@ -95,8 +99,10 @@ int main()
             if (event.type == sf::Event::Resized) path.setSize(win.getSize());
         }
         if (path.timeToPropagate()) path.propagate();
+        if (path1.timeToPropagate()) path1.propagate();
         win.clear(sf::Color::Black);
         win.draw(path);
+        win.draw(path1);
         win.display();
     }
 }
