@@ -1,7 +1,7 @@
 #ifndef CIRCULAR_ARRAY_H
 #define CIRCULAR_ARRAY_H
 
-#include <vector>
+#include <array>
 #include <cstddef>
 
 
@@ -9,16 +9,13 @@ template<typename T, std::size_t N>
 class CircularArray
 {
 public:
-    CircularArray()
+    constexpr void push_back(T const &t)
     {
-        container.reserve(N);
-    }
-    void push_back(T const &t)
-    {
-        if (container.size() < N)
+        if (sizeCounter < N)
         {
-            container.push_back(t);
-            last = container.size() - 1;
+            container[sizeCounter] = t;
+            ++sizeCounter;
+            last = sizeCounter - 1;
         }
         else
         {
@@ -28,37 +25,38 @@ public:
             current = first;
         }
     }
-    bool hasNext() const
+    constexpr bool hasNext() const
     {
-        return counter < container.size();
+        return counter < sizeCounter;
     }
-    T const &getNext()
+    constexpr T const &getNext()
     {
         auto const &i = container[current];
         current = (current + 1) % N;
         ++counter;
         return i;
     }
-    void reload()
+    constexpr void reload()
     {
         current = first;
         counter = 0;
     }
-    auto size() const
+    constexpr auto size() const
     {
-        return container.size();
+        return sizeCounter;
     }
-    auto const &operator[](std::size_t i) const
+    constexpr auto const &operator[](std::size_t i) const
     {
         return container[(first + i) % N];
     }
-    auto &operator[](std::size_t i)
+    constexpr auto &operator[](std::size_t i)
     {
         return container[(first + i) % N];
     }
 private:
     std::size_t counter{};
+    std::size_t sizeCounter{};
     std::size_t first{}, last{N}, current{};
-    std::vector<T> container;
+    std::array<T, N> container{};
 };
 #endif
