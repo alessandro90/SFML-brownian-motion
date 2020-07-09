@@ -8,7 +8,7 @@ class Noise
 public:
     float get()
     {
-        return 100. * noise(gen);
+        return 50. * noise(gen);
     }
 private:
     static inline std::mt19937 gen{std::random_device{}()};
