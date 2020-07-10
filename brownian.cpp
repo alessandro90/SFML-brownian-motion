@@ -117,9 +117,6 @@ int main()
                 if (event.mouseButton.button == sf::Mouse::Left)
                 {
                     auto size = win.getSize();
-                    sf::Vector2f startPoint{
-                        static_cast<float>(event.mouseButton.x),
-                        static_cast<float>(event.mouseButton.y)};
 
                     paths.emplace_back(
                         size,
