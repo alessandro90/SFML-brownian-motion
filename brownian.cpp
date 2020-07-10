@@ -55,12 +55,17 @@ public:
         auto const &potentialGradient = energyPotential->gradient(last);
         sf::Vector2f noises{noiseA.get(), noiseB.get()};
         sf::Vector2f newPos = last - potentialGradient * propagationTime + std::sqrt(propagationTime) * noises;
-        if (newPos.x < width && newPos.y < height)
+        if (insideView(newPos))
         {
             points.push_back(newPos);
         }
     }
 private:
+    bool insideView(sf::Vector2f const &v) const
+    {
+        return 0 < v.x && v.x < width && 0 < v.y && v.y < height;
+    }
+
     void draw(sf::RenderTarget &target, sf::RenderStates states) const override
     {
         states.transform *= getTransform();
