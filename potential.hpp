@@ -2,6 +2,7 @@
 #define POTENTIAL_H
 
 #include "coordinate2d.hpp"
+#include <cmath>
 
 struct Potential
 {
@@ -46,6 +47,42 @@ struct SingleWell: Potential
     }
 private:
     float const a, b, c, d;
+    sf::Vector2f size;
+};
+
+struct InverseSingleWell: Potential
+{
+    explicit InverseSingleWell(sf::Vector2u const &size,
+                               float a = 1.f,
+                               float b = 1.f,
+                               float c = 0.f,
+                               float d = 0.f): singleWell{size, a, b, c, d} {}
+    void setSize(sf::Vector2u const &size) override
+    {
+        singleWell.setSize(size);
+    }
+    sf::Vector2f gradient(sf::Vector2f const &point) const override
+    {
+        return -singleWell.gradient(point);
+    }
+private:
+    SingleWell singleWell;
+};
+
+struct CosineSum: Potential
+{
+    explicit CosineSum(sf::Vector2u const &size):
+    size{static_cast<float>(size.x), static_cast<float>(size.y)} {}
+    void setSize(sf::Vector2u const &size) override
+    {
+        this->size.x = static_cast<float>(size.x) / 2.f;
+        this->size.y = static_cast<float>(size.y) / 2.f;
+    }
+    sf::Vector2f gradient(sf::Vector2f const &point) const override
+    {
+        return {-10.f * std::sin(0.05f * (point.x + size.x)), -10.f * std::sin(0.05f * (point.y + size.y))};
+    }
+private:
     sf::Vector2f size;
 };
 

@@ -126,7 +126,7 @@ int main()
                         size,
                         sf::Vector2f{static_cast<float>(event.mouseButton.x),
                                      static_cast<float>(event.mouseButton.y)},
-                        std::make_unique<Flat>(),
+                        std::make_unique<InverseSingleWell>(size),
                         colorPicker.pick()
                     );
                 }
