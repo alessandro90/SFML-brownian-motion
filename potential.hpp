@@ -7,10 +7,12 @@ struct Potential
 {
     virtual ~Potential() = default;
     virtual sf::Vector2f gradient(sf::Vector2f const &point) const = 0;
+    virtual void setSize(sf::Vector2u const &size) = 0;
 };
 
 struct Flat: Potential
 {
+    void setSize(sf::Vector2u const &size) override { (void)size; }
     sf::Vector2f gradient(sf::Vector2f const &point) const override
     {
         (void)point;
@@ -20,13 +22,21 @@ struct Flat: Potential
 
 struct SingleWell: Potential
 {
-    explicit SingleWell(sf::Vector2u const &size, float a = 1.f, float b = 1.f, float c = 0.f, float d = 0.f):
+    explicit SingleWell(sf::Vector2u const &size,
+                        float a = 1.f,
+                        float b = 1.f,
+                        float c = 0.f,
+                        float d = 0.f):
     a{a}, b{b}, c{c}, d{d}
     {
         this->size.x = static_cast<float>(size.x) / 2.f;
         this->size.y = static_cast<float>(size.y) / 2.f;
     }
-    
+    void setSize(sf::Vector2u const &size) override
+    {
+        this->size.x = static_cast<float>(size.x) / 2.f;
+        this->size.y = static_cast<float>(size.y) / 2.f;
+    }
     sf::Vector2f gradient(sf::Vector2f const &point) const override
     {
         return {

@@ -36,6 +36,7 @@ public:
     {
         width = size.x;
         height = size.y;
+        energyPotential->setSize(size);
     }
     bool timeToPropagate()
     {
@@ -85,7 +86,7 @@ private:
 
 int main()
 {
-    sf::RenderWindow win{sf::VideoMode{800, 800}, "Brownian Motion"};
+    sf::RenderWindow win{sf::VideoMode{600, 600}, "Brownian Motion"};
     std::list<BrownianPath> paths{};
     ColorPicker colorPicker{};
 
@@ -100,6 +101,9 @@ int main()
                 win.close();
                 break;
             case sf::Event::Resized:
+                // Scale the view to fit the new resolution
+                // https://www.sfml-dev.org/tutorials/2.2/graphics-view.php#showing-more-when-the-window-is-resized
+                win.setView(sf::View(sf::FloatRect(0, 0, event.size.width, event.size.height)));
                 std::for_each(paths.begin(), paths.end(), [&](auto &d) {
                     d.setSize(win.getSize());
                 });
@@ -112,10 +116,14 @@ int main()
                         static_cast<float>(event.mouseButton.x),
                         static_cast<float>(event.mouseButton.y)
                     };
-                    paths.emplace_back(size,
-                                       startPoint,
-                                       std::make_unique<SingleWell>(size),
-                                       colorPicker.pick());
+                    
+                    paths.emplace_back(
+                        size,
+                        sf::Vector2f{static_cast<float>(event.mouseButton.x),
+                                     static_cast<float>(event.mouseButton.y)},
+                        std::make_unique<Flat>(),
+                        colorPicker.pick()
+                    );
                 }
                 break;
             case sf::Event::KeyPressed:
