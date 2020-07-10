@@ -3,7 +3,7 @@
 #include <chrono>
 #include <memory>
 #include <utility>
-#include <array>
+#include <vector>
 #include <algorithm>
 #include "coordinate2d.hpp"
 #include "potential.hpp"
@@ -20,15 +20,17 @@ auto getElapsed(TimePoint const &start, TimePoint const &end)
 class BrownianPath: public sf::Drawable, public sf::Transformable
 {
 public:
-    explicit BrownianPath(sf::Vector2u const &size, std::unique_ptr<Potential> p, sf::Color color):
+    explicit BrownianPath(sf::Vector2u const &size,
+                          sf::Vector2f const &startPoint,
+                          std::unique_ptr<Potential> p,
+                          sf::Color color):
     width{size.x},
     height{size.y},
     energyPotential{std::move(p)},
     color{color}
     {
-        points.push_back(sf::Vector2f{
-            static_cast<float>(width) / 2.f, static_cast<float>(height) / 2.f
-        });
+        points.push_back(startPoint);
+        propagate();
     }
     void setSize(sf::Vector2u const & size)
     {
@@ -58,55 +60,21 @@ public:
         }
     }
 private:
-    struct Drawer
-    {
-        BrownianPath *p;
-        virtual ~Drawer() = default;
-        Drawer(BrownianPath *p): p{p} {}
-        virtual void draw(sf::RenderTarget &target) = 0;
-    };
-    struct DrawerLines: Drawer
-    {
-        explicit DrawerLines(BrownianPath *p): Drawer{p} {}
-        void draw(sf::RenderTarget &target) override
-        {
-            sf::VertexArray lines{sf::LinesStrip, p->points.size()};
-            for (std::size_t i = 0; i < p->points.size(); ++i)
-            {
-                lines[i].position = p->points[i];
-                lines[i].color = p->color;
-            }
-            target.draw(lines);
-        }
-    };
-    struct DrawerPoint: Drawer
-    {
-        explicit DrawerPoint(BrownianPath *p): Drawer{p} {}
-        void draw(sf::RenderTarget &target) override
-        {
-            if (p->points.size() > 1)
-            {
-                p->drawer = &p->drawerLines;
-                p->drawer->draw(target);
-                return;
-            }
-            sf::VertexArray point{sf::Points, 1};
-            point[0].position = sf::Vector2f{p->points[0].x, p->points[0].y};
-            target.draw(point);
-        }
-    };
     void draw(sf::RenderTarget &target, sf::RenderStates states) const override
     {
         states.transform *= getTransform();
         states.texture = NULL;
-        drawer->draw(target);
+        sf::VertexArray lines{sf::LinesStrip, points.size()};
+        for (std::size_t i = 0; i < points.size(); ++i)
+        {
+            lines[i].position = points[i];
+            lines[i].color = color;
+        }
+        target.draw(lines);
     }
     std::size_t width, height;
     std::unique_ptr<Potential> energyPotential;
     sf::Color color;
-    DrawerPoint drawerPoint{this};
-    DrawerLines drawerLines{this};
-    Drawer *drawer{&drawerPoint};
     Noise noiseA{};
     Noise noiseB{};
     TimePoint lastUpdate{};
@@ -118,14 +86,7 @@ private:
 int main()
 {
     sf::RenderWindow win{sf::VideoMode{800, 800}, "Brownian Motion"};
-    auto size = win.getSize();
-    // BrownianPath path1{size, std::make_unique<SingleWell>(size), sf::Color::Green};
-    BrownianPath path{size, std::make_unique<Flat>(), sf::Color::Red};
-    BrownianPath path1{size, std::make_unique<Flat>(), sf::Color::Green};
-    BrownianPath path2{size, std::make_unique<Flat>(), sf::Color::Blue};
-    BrownianPath path3{size, std::make_unique<Flat>(), sf::Color::Magenta};
-    BrownianPath path4{size, std::make_unique<Flat>(), sf::Color::Cyan};
-    std::array drawables{&path, &path1, &path2, &path3, &path4};
+    std::vector<BrownianPath> paths{};
     
     while (win.isOpen())
     {
@@ -138,19 +99,30 @@ int main()
                 win.close();
                 break;
             case sf::Event::Resized:
-                std::for_each(drawables.begin(), drawables.end(), [&](auto &d) {
-                    d->setSize(win.getSize());
+                std::for_each(paths.begin(), paths.end(), [&](auto &d) {
+                    d.setSize(win.getSize());
                 });
+                break;
+            case sf::Event::MouseButtonPressed:
+                if (event.mouseButton.button == sf::Mouse::Left)
+                {
+                    auto size = win.getSize();
+                    sf::Vector2f startPoint{
+                        static_cast<float>(event.mouseButton.x),
+                        static_cast<float>(event.mouseButton.y)
+                    };
+                    paths.emplace_back(size, startPoint, std::make_unique<SingleWell>(size), sf::Color::Green);
+                }
                 break;
             default:
                 break;
             }
         }
-        win.clear(sf::Color::Black);
-        for (auto d : drawables)
+        win.clear(sf::Color{128, 128, 128});
+        for (auto &d : paths)
         {
-            if (d->timeToPropagate()) d->propagate();
-            win.draw(*d);
+            if (d.timeToPropagate()) d.propagate();
+            win.draw(d);
         }
         win.display();
     }

@@ -30,8 +30,8 @@ struct SingleWell: Potential
     sf::Vector2f gradient(sf::Vector2f const &point) const override
     {
         return {
-            2.f * a * (point.x-size.x) + c * point.x,
-            2.f * b * (point.y-size.y) + d * point.y
+            2.f * a * (point.x - size.x) + c * point.x,
+            2.f * b * (point.y - size.y) + d * point.y
         };
     }
 private:
