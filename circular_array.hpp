@@ -4,8 +4,7 @@
 #include <array>
 #include <cstddef>
 
-
-template<typename T, std::size_t N>
+template <typename T, std::size_t N>
 class CircularArray
 {
 public:
@@ -53,6 +52,7 @@ public:
     {
         return container[(first + i) % N];
     }
+
 private:
     std::size_t counter{};
     std::size_t sizeCounter{};

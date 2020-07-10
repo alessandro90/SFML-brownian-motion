@@ -17,22 +17,21 @@ auto getElapsed(TimePoint const &start, TimePoint const &end)
     return std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 }
 
-class BrownianPath: public sf::Drawable, public sf::Transformable
+class BrownianPath : public sf::Drawable, public sf::Transformable
 {
 public:
     explicit BrownianPath(sf::Vector2u const &size,
                           sf::Vector2f const &startPoint,
                           std::unique_ptr<Potential> p,
-                          sf::Color color):
-    width{size.x},
-    height{size.y},
-    energyPotential{std::move(p)},
-    color{color}
+                          sf::Color color) : width{size.x},
+                                             height{size.y},
+                                             energyPotential{std::move(p)},
+                                             color{color}
     {
         points.push_back(startPoint);
         propagate();
     }
-    void setSize(sf::Vector2u const & size)
+    void setSize(sf::Vector2u const &size)
     {
         width = size.x;
         height = size.y;
@@ -60,6 +59,7 @@ public:
             points.push_back(newPos);
         }
     }
+
 private:
     bool insideView(sf::Vector2f const &v) const
     {
@@ -119,16 +119,14 @@ int main()
                     auto size = win.getSize();
                     sf::Vector2f startPoint{
                         static_cast<float>(event.mouseButton.x),
-                        static_cast<float>(event.mouseButton.y)
-                    };
-                    
+                        static_cast<float>(event.mouseButton.y)};
+
                     paths.emplace_back(
                         size,
                         sf::Vector2f{static_cast<float>(event.mouseButton.x),
                                      static_cast<float>(event.mouseButton.y)},
                         std::make_unique<InverseSingleWell>(size),
-                        colorPicker.pick()
-                    );
+                        colorPicker.pick());
                 }
                 break;
             case sf::Event::KeyPressed:
@@ -147,7 +145,8 @@ int main()
         win.clear(sf::Color{50, 50, 50});
         for (auto &d : paths)
         {
-            if (d.timeToPropagate()) d.propagate();
+            if (d.timeToPropagate())
+                d.propagate();
             win.draw(d);
         }
         win.display();
