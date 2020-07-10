@@ -3,7 +3,7 @@
 #include <chrono>
 #include <memory>
 #include <utility>
-#include <vector>
+#include <list>
 #include <algorithm>
 #include "coordinate2d.hpp"
 #include "potential.hpp"
@@ -86,8 +86,9 @@ private:
 int main()
 {
     sf::RenderWindow win{sf::VideoMode{800, 800}, "Brownian Motion"};
-    std::vector<BrownianPath> paths{};
-    
+    std::list<BrownianPath> paths{};
+    ColorPicker colorPicker{};
+
     while (win.isOpen())
     {
         sf::Event event;
@@ -111,14 +112,26 @@ int main()
                         static_cast<float>(event.mouseButton.x),
                         static_cast<float>(event.mouseButton.y)
                     };
-                    paths.emplace_back(size, startPoint, std::make_unique<SingleWell>(size), sf::Color::Green);
+                    paths.emplace_back(size,
+                                       startPoint,
+                                       std::make_unique<SingleWell>(size),
+                                       colorPicker.pick());
+                }
+                break;
+            case sf::Event::KeyPressed:
+                if (event.key.code == sf::Keyboard::Delete)
+                {
+                    if (!paths.empty())
+                    {
+                        paths.erase(paths.begin());
+                    }
                 }
                 break;
             default:
                 break;
             }
         }
-        win.clear(sf::Color{128, 128, 128});
+        win.clear(sf::Color{50, 50, 50});
         for (auto &d : paths)
         {
             if (d.timeToPropagate()) d.propagate();
