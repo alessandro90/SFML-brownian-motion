@@ -71,7 +71,8 @@ private:
 
 struct CosineSum : Potential
 {
-    explicit CosineSum(sf::Vector2u const &size) : size{static_cast<float>(size.x), static_cast<float>(size.y)} {}
+    explicit CosineSum(sf::Vector2u const &size) : size{static_cast<float>(size.x),
+                                                        static_cast<float>(size.y)} {}
     void setSize(sf::Vector2u const &size) override
     {
         this->size.x = static_cast<float>(size.x) / 2.f;
@@ -79,7 +80,8 @@ struct CosineSum : Potential
     }
     sf::Vector2f gradient(sf::Vector2f const &point) const override
     {
-        return {-10.f * std::sin(0.05f * (point.x + size.x)), -10.f * std::sin(0.05f * (point.y + size.y))};
+        return {-10.f * std::sin(0.05f * (point.x + size.x)),
+                -10.f * std::sin(0.05f * (point.y + size.y))};
     }
 
 private:

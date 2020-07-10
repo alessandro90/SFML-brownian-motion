@@ -5,30 +5,19 @@
 #include <cstdint>
 #include "SFML/Graphics.hpp"
 
-class Noise
+template <template <typename> typename Distribution, typename T, std::size_t MULT = 1>
+class Random
 {
 public:
-    float get()
+    Random(T minV, T maxV) : dis{minV, maxV} {}
+    T get()
     {
-        return 50. * noise(gen);
+        return static_cast<T>(MULT) * dis(gen);
     }
 
 private:
     static inline std::mt19937 gen{std::random_device{}()};
-    std::normal_distribution<float> noise{0., 1.};
-};
-
-class ColorPicker
-{
-public:
-    sf::Color pick()
-    {
-        return {dist(gen), dist(gen), dist(gen)};
-    }
-
-private:
-    static inline std::mt19937 gen{std::random_device{}()};
-    std::uniform_int_distribution<std::uint8_t> dist{0, 255};
+    Distribution<T> dis;
 };
 
 #endif

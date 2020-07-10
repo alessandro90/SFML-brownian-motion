@@ -5,6 +5,7 @@
 #include <utility>
 #include <list>
 #include <algorithm>
+#include <random>
 #include "coordinate2d.hpp"
 #include "potential.hpp"
 #include "noise.hpp"
@@ -50,10 +51,9 @@ public:
     }
     void propagate()
     {
-        auto const &last = points[points.size() - 1];
-        auto const &potentialGradient = energyPotential->gradient(last);
-        sf::Vector2f noises{noiseA.get(), noiseB.get()};
-        sf::Vector2f newPos = last - potentialGradient * propagationTime + std::sqrt(propagationTime) * noises;
+        sf::Vector2f const &last = points[points.size() - 1];
+        sf::Vector2f newPos = last - energyPotential->gradient(last) * propagationTime +
+                              std::sqrt(propagationTime) * sf::Vector2f{noise.get(), noise.get()};
         if (insideView(newPos))
         {
             points.push_back(newPos);
@@ -70,7 +70,7 @@ private:
     {
         states.transform *= getTransform();
         states.texture = NULL;
-        sf::VertexArray lines{sf::LinesStrip, points.size()};
+        sf::VertexArray lines{sf::LineStrip, points.size()};
         for (std::size_t i = 0; i < points.size(); ++i)
         {
             lines[i].position = points[i];
@@ -81,8 +81,7 @@ private:
     std::size_t width, height;
     std::unique_ptr<Potential> energyPotential;
     sf::Color color;
-    Noise noiseA{};
-    Noise noiseB{};
+    Random<std::normal_distribution, float, 50> noise{0.f, 1.f};
     TimePoint lastUpdate{};
     CircularArray<sf::Vector2f, 100> points{};
     std::chrono::milliseconds const waitTime{100};
@@ -93,7 +92,7 @@ int main()
 {
     sf::RenderWindow win{sf::VideoMode{600, 600}, "Brownian Motion"};
     std::list<BrownianPath> paths{};
-    ColorPicker colorPicker{};
+    Random<std::uniform_int_distribution, std::uint8_t> random{0, 255};
 
     while (win.isOpen())
     {
@@ -109,30 +108,25 @@ int main()
                 // Scale the view to fit the new resolution
                 // https://www.sfml-dev.org/tutorials/2.2/graphics-view.php#showing-more-when-the-window-is-resized
                 win.setView(sf::View(sf::FloatRect(0, 0, event.size.width, event.size.height)));
-                std::for_each(paths.begin(), paths.end(), [&](auto &d) {
-                    d.setSize(win.getSize());
-                });
+                std::for_each(paths.begin(), paths.end(), [&](auto &d) { d.setSize(win.getSize()); });
                 break;
             case sf::Event::MouseButtonPressed:
                 if (event.mouseButton.button == sf::Mouse::Left)
                 {
                     auto size = win.getSize();
 
-                    paths.emplace_back(
-                        size,
-                        sf::Vector2f{static_cast<float>(event.mouseButton.x),
-                                     static_cast<float>(event.mouseButton.y)},
-                        std::make_unique<InverseSingleWell>(size),
-                        colorPicker.pick());
+                    paths.emplace_back(size,
+                                       sf::Vector2f{static_cast<float>(event.mouseButton.x),
+                                                    static_cast<float>(event.mouseButton.y)},
+                                       std::make_unique<SingleWell>(size),
+                                       sf::Color{random.get(), random.get(), random.get()});
                 }
                 break;
             case sf::Event::KeyPressed:
                 if (event.key.code == sf::Keyboard::Delete)
                 {
                     if (!paths.empty())
-                    {
                         paths.erase(paths.begin());
-                    }
                 }
                 break;
             default:
