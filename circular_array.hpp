@@ -4,6 +4,12 @@
 #include <array>
 #include <cstddef>
 
+template <std::size_t N>
+constexpr auto indexAfter(std::size_t i, std::size_t j = 1)
+{
+    return (i + j) % N;
+}
+
 template <typename T, std::size_t N>
 class CircularArray
 {
@@ -20,7 +26,7 @@ public:
         {
             container[first] = t;
             last = first;
-            first = (first + 1) % N;
+            first = indexAfter<N>(first);
             current = first;
         }
     }
@@ -31,7 +37,7 @@ public:
     constexpr T const &getNext()
     {
         auto const &i = container[current];
-        current = (current + 1) % N;
+        current = indexAfter<N>(current);
         ++counter;
         return i;
     }
@@ -46,11 +52,11 @@ public:
     }
     constexpr auto const &operator[](std::size_t i) const
     {
-        return container[(first + i) % N];
+        return container[indexAfter<N>(first, i)];
     }
     constexpr auto &operator[](std::size_t i)
     {
-        return container[(first + i) % N];
+        return container[indexAfter<N>(first, i)];
     }
 
 private:
