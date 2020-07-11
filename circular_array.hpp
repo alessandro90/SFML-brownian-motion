@@ -56,7 +56,7 @@ public:
 private:
     std::size_t counter{};
     std::size_t sizeCounter{};
-    std::size_t first{}, last{N}, current{};
+    std::size_t first{}, last{}, current{};
     std::array<T, N> container{};
 };
 #endif
